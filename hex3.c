@@ -50,11 +50,9 @@ int main(int argc, char *argv[]) {
       .width = 16,
       .show_ascii = 1,
       .show_offset = 1,
-
       .offset_format = OFFSET_HEX,
       .data_format = DATA_HEX,
       .grouping = 2,
-
       .filename = NULL,
       .output_filename = NULL
     };
@@ -215,6 +213,8 @@ void print_data(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t 
 
             case DATA_BINARY:
                 //TODO
+                //for loop over bits in a byte. bitwise shift to the right, bitwise AND 1 to select leftmost bits progressively.
+                //each iteration print bit as integer
                 break;
         }
         if (opts->grouping == 1 || (i + 1) % opts->grouping == 0) {

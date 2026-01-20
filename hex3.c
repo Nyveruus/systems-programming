@@ -222,7 +222,8 @@ void print_data(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t 
         }
     }
 
-    //TODO PADDING
+    //TODO PADDING. Will require an if statement of some sorts to detect if expected amount of bytes have been printed, compare bytes read line and width in opts, when padding consider missing space from grouping
+    //essentialy simulate printing the data with same logic but rather than data, it's spaces'
 }
 
 void print_ascii(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t bytes_read) {
@@ -249,7 +250,7 @@ void help(void) {
 }
 
 /*
- u n*signed char *dump(unsigned char absolute_path[]) {
+ unsigned char *dump(unsigned char absolute_path[]) {
  unsigned char buffer[100];
  printf("Image name: ");
  fgets(buffer, 100, stdin);

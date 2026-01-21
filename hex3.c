@@ -16,12 +16,12 @@ typedef enum {
 } data_format_type;
 
 typedef struct {
-    int width;
-    int show_ascii;
-    int show_offset;
+    unsigned int width;
+    unsigned int show_ascii;
+    unsigned int show_offset;
     offset_format_type offset_format;
     data_format_type data_format;
-    int grouping;
+    unsigned int grouping;
     char *filename;
     char *output_filename;
 } hexdump_options;
@@ -34,7 +34,7 @@ void print_ascii(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t
 void help(void);
 
 //define enums
-//define struct struct
+//define struct
 //set default settings in struct opts
 //receive arguments, start here
 //long option definitions in parsing
@@ -189,11 +189,11 @@ void hexdump(FILE *in, FILE *out, hexdump_options *opts) {
 void print_offset(FILE *out, hexdump_options *opts, size_t offset) {
     switch (opts->offset_format) {
         case OFFSET_HEX:
-            fprintf(out, "%08zX: ", offset);
+            fprintf(out, "%08zX:  ", offset);
             break;
 
         case OFFSET_DECIMAL:
-            fprintf(out, "%08zu: ", offset);
+            fprintf(out, "%08zu:  ", offset);
             break;
     }
     return;
@@ -203,7 +203,7 @@ void print_data(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t 
     for (int i = 0; i < bytes_read_line; i++) {
         //grouping
         if (i > 0 && i % opts->grouping == 0) {
-            fprintf(out, " ");
+            fprintf(out, "  ");
         }
 
         switch (opts->data_format) {
@@ -216,117 +216,50 @@ void print_data(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t 
                 //each iteration print bit as integer
                 for (int j = 7; j >= 0; j--) {
                     int bit = (buffer[i] >> j) & 1;
-                    printf("%i", bit);
+                    fprintf(out, "%i", bit);
                 }
                 break;
         }
-        if (opts->grouping == 1 || (i + 1) % opts->grouping == 0) {
-            fprintf(out, " ");
+
+    }
+    //PADDING. Will require an if statement of some sorts to detect if expected amount of bytes have been printed, compare bytes read line and width in opts, when padding add missing space from grouping
+    //essentialy simulate printing the data with same logic but rather than data, it's spaces
+    if (bytes_read_line != opts->width) {
+        int missing_bytes = opts->width - bytes_read_line;
+        for (int k = 0; k < missing_bytes; k++) {
+            if (k > 0 && k % opts->grouping == 0) {
+                fprintf(out, "  ");
+            }
+            switch (opts->data_format) {
+                case DATA_HEX:
+                    fprintf(out, "  ");
+                    break;
+                case DATA_BINARY:
+                    fprintf(out, "        ");
+                    break;
+            }
         }
     }
-
-    //TODO PADDING. Will require an if statement of some sorts to detect if expected amount of bytes have been printed, compare bytes read line and width in opts, when padding consider missing space from grouping
-    //essentialy simulate printing the data with same logic but rather than data, it's spaces'
 }
 
+
 void print_ascii(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t bytes_read) {
-    fprintf(out, " ");
+    fprintf(out, "  ");
     for (size_t i = 0; i < bytes_read; i++) {
         fprintf(out, "%c", isprint(buffer[i]) ? buffer[i] : '.');
     }
-
-    //TODO PADDING
     return;
 }
 
 void help(void) {
-    printf("Usage: ./hex [options] file\n");
-    printf("-w, --width integer\n");
-    printf("-a, --no-ascii\n");
-    printf("-O, --no-offset\n");
-    printf("-d, --decimal-offset\n");
-    printf("-b, --binary\n");
-    printf("-o, --output\n");
-    printf("-g, --group\n");
-    printf("-h, --help\n");
+    printf("Usage: hex [options]... file\n");
+    printf("-w, --width=INTEGER     the number of bytes per line (1-255)\n");
+    printf("-a, --no-ascii          remove printable characters column\n");
+    printf("-O, --no-offset         remove the offset column\n");
+    printf("-d, --decimal-offset    output the offset column in decimal\n");
+    printf("-b, --binary            output data in binary representation\n");
+    printf("-o, --output=FILE       set destination file\n");
+    printf("-g, --group=INTEGER     set byte grouping to 2, 4 or 8\n");
+    printf("-h, --help              display this help\n");
     return;
 }
-
-/*
- unsigned char *dump(unsigned char absolute_path[]) {
- unsigned char buffer[100];
- printf("Image name: ");
- fgets(buffer, 100, stdin);
- buffer[strcspn(buffer, "\n")] = '\0';
-
- if (strlen(absolute_path) + strlen(buffer) >= 100) {
-     fprintf(stderr, "Path too long\n");
-     return NULL;
-     }
-
-     strcat(absolute_path, buffer);
-     FILE *in = fopen(absolute_path, "rb");
-     if (in == NULL) {
-         fprintf(stderr, "File not found\n");
-         return NULL;
-         }
-
-         fseek(in, 0, SEEK_END);
-         long size = ftell(in);
-         rewind(in);
-
-         unsigned char *file = malloc(size);
-         if (file == NULL) {
-             fprintf(stderr, "Memory allocation failed\n");
-             fclose(in);
-             return NULL;
-             }
-
-             long bytes_read = fread(file, 1, size, in);
-             if (bytes_read != size) {
-                 fprintf(stderr, "Failed to read entire file\n");
-                 fclose(in);
-                 free(file);
-                 return NULL;
-                 }
-
-                 unsigned char buff[17];
-                 long offset = 0;
-
-                 for (long i = 0; i < size; i++) {
-                     if (i % 16 == 0) {
-                         if (i > 0) {
-
-                             buff[16] = '\0';
-                             printf(" %s\n", buff);
-                             }
-                             printf("%08lX: ", offset);
-                             offset += 16;
-                             }
-
-                             printf("%02X ", file[i]);
-
-                             if (isprint(file[i])) {
-                                 buff[i % 16] = file[i];
-                                 } else {
-                                     buff[i % 16] = '.';
-                                     }
-                                     }
-
-                                     int remaining = size % 16;
-
-                                     if (remaining == 0) {
-                                         remaining = 16;
-                                         }
-
-                                         for (int i = remaining; i < 16; i++) {
-                                             printf("   ");
-                                             }
-
-                                             buff[remaining] = '\0';
-                                             printf(" %s\n", buff);
-
-                                             fclose(in);
-                                             return file;
-                                             }
-                                             */

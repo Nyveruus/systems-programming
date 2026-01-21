@@ -227,7 +227,7 @@ void print_data(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t 
     if (bytes_read_line != opts->width) {
         int missing_bytes = opts->width - bytes_read_line;
         for (int k = 0; k < missing_bytes; k++) {
-            if (k > 0 && k % opts->grouping == 0) {
+            if ((bytes_read_line + k) > 0 && (bytes_read_line + k) % opts->grouping == 0) {
                 fprintf(out, "  ");
             }
             switch (opts->data_format) {

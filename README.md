@@ -28,6 +28,4 @@ Usage: hex3 [options]... file
 
 ```
 $ hex3 -w 8 -g 2 file
-
-
-
+```

@@ -16,7 +16,7 @@ Usage: hex [options]... file
 - -d, --decimal-offset    output the offset column in decimal
 - -b, --binary            output data in binary representation
 - -o, --output=FILE       set destination file
-- -g, --group=INTEGER     set byte grouping to 2, 4 or 8
+- -g, --group=INTEGER     set byte grouping to 1, 2, 4 or 8
 - -h, --help              display this help
 
 ## Future additions:

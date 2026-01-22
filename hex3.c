@@ -30,7 +30,7 @@ int parse_arguments(int argc, char *argv[], hexdump_options *opts);
 void hexdump(FILE *in, FILE *out, hexdump_options *opts);
 void print_offset(FILE *out, hexdump_options *opts, size_t offset);
 void print_data(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t bytes_read);
-void print_ascii(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t bytes_read);
+void print_ascii(FILE *out, unsigned char *buffer, size_t bytes_read);
 void help(void);
 
 //define enums
@@ -177,7 +177,7 @@ void hexdump(FILE *in, FILE *out, hexdump_options *opts) {
         print_data(out, opts, buffer, bytes_read);
 
         if (opts->show_ascii) {
-            print_ascii(out, opts, buffer, bytes_read);
+            print_ascii(out, buffer, bytes_read);
         }
 
         fprintf(out, "\n");
@@ -200,7 +200,7 @@ void print_offset(FILE *out, hexdump_options *opts, size_t offset) {
 }
 
 void print_data(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t bytes_read_line) {
-    for (int i = 0; i < bytes_read_line; i++) {
+    for (size_t i = 0; i < bytes_read_line; i++) {
         //grouping
         if (i > 0 && i % opts->grouping == 0) {
             fprintf(out, "  ");
@@ -243,7 +243,7 @@ void print_data(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t 
 }
 
 
-void print_ascii(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t bytes_read) {
+void print_ascii(FILE *out, unsigned char *buffer, size_t bytes_read) {
     fprintf(out, "  ");
     for (size_t i = 0; i < bytes_read; i++) {
         fprintf(out, "%c", isprint(buffer[i]) ? buffer[i] : '.');

@@ -33,18 +33,6 @@ void print_data(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t 
 void print_ascii(FILE *out, unsigned char *buffer, size_t bytes_read);
 void help(void);
 
-//define enums
-//define struct
-//set default settings in struct opts
-//receive arguments, start here
-//long option definitions in parsing
-//receive arguments, start here
-//parse options and arguments
-//read file handle and write file handle
-//encapsulate all dumping functions in wrapper function
-//print offset hex OR decimal OR none (hex default), print hex OR print binary (hex default), different grouping
-// (single function: 2, 4 or 8, default 2 for hex, default 4 for binary), print ascii OR none (single function, default print ascii)
-
 int main(int argc, char *argv[]) {
     hexdump_options opts = {
       .width = 16,
@@ -85,6 +73,7 @@ int main(int argc, char *argv[]) {
 }
 
 int parse_arguments(int argc, char *argv[], hexdump_options *opts) {
+    // parse short and long options using getopt_long. filename points to first non-option argument found
     static struct option long_options[] = {
         {"width",             required_argument,  NULL, 'w'},
         {"no-ascii",          no_argument,        NULL, 'a'},
@@ -100,7 +89,6 @@ int parse_arguments(int argc, char *argv[], hexdump_options *opts) {
     int opt;
     while ((opt = getopt_long(argc, argv, "w:aOdbo:g:h", long_options, NULL)) != -1) {
         switch (opt) {
-
             case 'w':
                 opts->width = atoi(optarg);
                 if (opts->width < 1 || opts->width > 255) {
@@ -158,11 +146,8 @@ int parse_arguments(int argc, char *argv[], hexdump_options *opts) {
     return 0;
 }
 
-//wrapper
+// wrapper
 void hexdump(FILE *in, FILE *out, hexdump_options *opts) {
-//access to file in and file out file handles. Use fprintf for out in all cases.
-//access to parsed options: width of line (data), ascii on or off, offset on or off, offset option hex (default) or decimal,
-//data option hex (default) or binary, data grouping int 2 (default), 4, or 8. If bin and not specified, grouping 4 is used. Use case
 
     unsigned char buffer[256];
     size_t offset = 0;
@@ -200,8 +185,8 @@ void print_offset(FILE *out, hexdump_options *opts, size_t offset) {
 }
 
 void print_data(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t bytes_read_line) {
+    // Print hex or binary representation of data. If conditions are met, print spaces beforehand for grouping
     for (size_t i = 0; i < bytes_read_line; i++) {
-        //grouping
         if (i > 0 && i % opts->grouping == 0) {
             fprintf(out, "  ");
         }
@@ -212,8 +197,6 @@ void print_data(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t 
                 break;
 
             case DATA_BINARY:
-                //for loop over bits in a byte. bitwise shift to the right, bitwise AND 1 to select leftmost bits progressively.
-                //each iteration print bit as integer
                 for (int j = 7; j >= 0; j--) {
                     int bit = (buffer[i] >> j) & 1;
                     fprintf(out, "%i", bit);
@@ -222,8 +205,7 @@ void print_data(FILE *out, hexdump_options *opts, unsigned char *buffer, size_t 
         }
 
     }
-    //PADDING. Will require an if statement of some sorts to detect if expected amount of bytes have been printed, compare bytes read line and width in opts, when padding add missing space from grouping
-    //essentialy simulate printing the data with same logic but rather than data, it's spaces
+    // Pad incomplete line so the columns remain aligned
     if (bytes_read_line != opts->width) {
         int missing_bytes = opts->width - bytes_read_line;
         for (int k = 0; k < missing_bytes; k++) {
@@ -252,7 +234,7 @@ void print_ascii(FILE *out, unsigned char *buffer, size_t bytes_read) {
 }
 
 void help(void) {
-    printf("Usage: hex [options]... file\n");
+    printf("Usage: hex3 [options]... file\n");
     printf("-w, --width=INTEGER     the number of bytes per line (1-255)\n");
     printf("-a, --no-ascii          remove printable characters column\n");
     printf("-O, --no-offset         remove the offset column\n");

@@ -4,11 +4,16 @@
 
 Hex3 is a lightweight hexadecimal dump utility written in C. By default, it outputs three columns: offset, data and ASCII, all of which can be individually customized or disabled with command line options
 
-Hex3's goal is to cleanly integrate into pipelines and scripts with minimal overhead
+Hex3's goal is to cleanly integrate into pipelines and scripts.
 
+## Install
+```
+$ make
+$ sudo make install
+```
 ## Options
 
-Usage: hex [options]... file
+Usage: hex3 [options]... file
 
 - -w, --width=INTEGER     the number of bytes per line (1-255)
 - -a, --no-ascii          remove printable characters column
@@ -19,8 +24,10 @@ Usage: hex [options]... file
 - -g, --group=INTEGER     set byte grouping to 1, 2, 4 or 8
 - -h, --help              display this help
 
-## Future additions:
+## Example
 
-1. File concatenation support with continuous offsets (and option reset offset per file)
-2. Partial dump (start offset and length)
-3. Output CSV or TSV
+```
+$ hex3 -w 8 -g 2 file
+
+
+

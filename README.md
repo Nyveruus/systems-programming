@@ -4,7 +4,7 @@
 
 Hex3 is a hexadecimal dump utility written in C. By default, it outputs three columns: offset, data and ASCII, all of which can be individually customized or disabled with command line options
 
-Hex3's goal is to cleanly integrate into pipelines and scripts.
+Hex3's goal is to be used in pipelines and scripts.
 
 ## Install
 ```

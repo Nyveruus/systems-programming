@@ -8,9 +8,6 @@
 #include <arpa/inet.h>
 #include <poll.h>
 
-//#define IP "127.0.0.1"
-//#define PORT 5423
-
 #define BACKLOG 5
 #define TIMEOUT 2000
 

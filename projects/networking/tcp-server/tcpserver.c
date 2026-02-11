@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -16,20 +17,20 @@
 
 int main(void) {
 
-    socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+    int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd < 0) {
         perror("Socket error");
         return 1;
     }
 
     struct sockaddr_in server, peer;
-    memset(&server, 0, sizeof(sockaddr_in));
-    memset(&peer, 0, sizeof(sockaddr_in));
-    socklen_t addr_size = sizeof(sockaddr_in);
+    socklen_t addr_size = sizeof(struct sockaddr_in);
+    memset(&server, 0, addr_size);
+    memset(&peer, 0, addr_size);
 
     server.sin_family = AF_INET;
     server.sin_port = htons(PORT);
-    server.sin_addr = inet_addr(IP);
+    server.sin_addr.s_addr = inet_addr(IP);
 
     int client_fd = -1;
 
@@ -44,18 +45,18 @@ int main(void) {
     }
     // select
 
-    struct pollfd poll[] = {
+    struct pollfd pollt[] = {
         { .fd = socket_fd, .events = POLLIN, .revents = 0 }
     };
 
-    size_t size = sizeof(poll) / sizeof(poll[0]);
+    size_t size = sizeof(pollt) / sizeof(pollt[0]);
     char buffer[BUFFER_SIZE] = "";
 
     for (;;) {
         // check if return event is POLLIN using &
         // == only works if nothing else is set
-        int r = poll(poll, size, TIMEOUT);
-        if (r > 0 && (poll[0].revents & POLLIN))
+        int r = poll(pollt, size, TIMEOUT);
+        if (r > 0 && (pollt[0].revents & POLLIN))
             break;
         else if (r == -1) {
             perror("Poll");
@@ -70,13 +71,13 @@ int main(void) {
     }
 
     for (;;) {
-        ssize_t read = read(client_fd, &buffer, sizeof(buffer));
-        if (read < 0) {
+        ssize_t red = read(client_fd, &buffer, sizeof(buffer));
+        if (red < 0) {
             perror("Read");
             break;
         }
 
-        fwrite(&buffer, 1, read, stdout);
+        fwrite(&buffer, 1, red, stdout);
         fflush(stdout);
     }
 

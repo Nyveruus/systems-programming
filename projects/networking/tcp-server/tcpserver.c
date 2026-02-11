@@ -9,7 +9,7 @@
 #define IP "127.0.0.1"
 #define PORT 5423
 
-#define BACKLOG 10
+#define BACKLOG 1
 
 int main(void) {
 
@@ -19,26 +19,38 @@ int main(void) {
         return 1;
     }
 
-    struct sockaddr_in server;
+    struct sockaddr_in server, peer;
     memset(&server, 0, sizeof(sockaddr_in));
+    memset(&peer, 0, sizeof(sockaddr_in));
+    socklen_t addr_size = sizeof(sockaddr_in);
 
     server.sin_family = AF_INET;
     server.sin_port = htons(PORT);
     server.sin_addr = inet_addr(IP);
 
-    bind(socket_fd, (struct sockaddr *)&server, sizeof(server));
-    if (bind(socket_fd, (struct sockaddr *)&server, sizeof(server)) == -1) {
+    int client_fd = -1;
+
+    if (bind(socket_fd, (struct sockaddr *)&server, addr_size) == -1) {
         perror("Bind");
-        goto error;
+        goto cleanup;
     }
 
     if (listen(socket_fd, BACKLOG) == -1) {
         perror("Listen");
-        goto error;
+        goto cleanup;
+    }
+    // select
+
+
+    // accepts
+    if ((client_fd = accept(socket_fd, (struct sockaddr *)&peer, &addr_size)) == -1) {
+        perror("Accept");
+        goto cleanup;
     }
     // clean up
-error:
+cleanup:
     close(socket_fd);
+    if (client_fd != -1) close(client_fd);
     return 1;
 
 }

@@ -4,12 +4,14 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <poll.h>
 
 // socket
 #define IP "127.0.0.1"
 #define PORT 5423
 
 #define BACKLOG 1
+#define TIMEOUT 2000
 
 int main(void) {
 
@@ -41,8 +43,25 @@ int main(void) {
     }
     // select
 
+    struct pollfd poll[] = {
+        { .fd = socket_fd, .events = POLLIN, .revents = 0 }
+    };
 
-    // accepts
+    size_t size = sizeof(poll) / sizeof(poll[0]);
+
+    for (;;) {
+        // check if return event is POLLIN using &
+        // == only works if nothing else is set
+        int r = poll(poll, size, TIMEOUT);
+        if (r > 0 && (poll[0].revents == POLLIN))
+            break;
+        else if (r == -1) {
+            perror("Poll");
+            goto cleanup;
+        }
+
+    }
+    // accept
     if ((client_fd = accept(socket_fd, (struct sockaddr *)&peer, &addr_size)) == -1) {
         perror("Accept");
         goto cleanup;

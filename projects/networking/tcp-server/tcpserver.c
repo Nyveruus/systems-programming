@@ -6,12 +6,13 @@
 #include <arpa/inet.h>
 #include <poll.h>
 
-// socket
 #define IP "127.0.0.1"
 #define PORT 5423
 
 #define BACKLOG 1
 #define TIMEOUT 2000
+
+#define BUFFER_SIZE 8192
 
 int main(void) {
 
@@ -48,12 +49,13 @@ int main(void) {
     };
 
     size_t size = sizeof(poll) / sizeof(poll[0]);
+    char buffer[BUFFER_SIZE] = "";
 
     for (;;) {
         // check if return event is POLLIN using &
         // == only works if nothing else is set
         int r = poll(poll, size, TIMEOUT);
-        if (r > 0 && (poll[0].revents == POLLIN))
+        if (r > 0 && (poll[0].revents & POLLIN))
             break;
         else if (r == -1) {
             perror("Poll");
@@ -66,6 +68,18 @@ int main(void) {
         perror("Accept");
         goto cleanup;
     }
+
+    for (;;) {
+        ssize_t read = read(client_fd, &buffer, sizeof(buffer));
+        if (read < 0) {
+            perror("Read");
+            break;
+        }
+
+        fwrite(&buffer, 1, read, stdout);
+        fflush(stdout);
+    }
+
     // clean up
 cleanup:
     close(socket_fd);

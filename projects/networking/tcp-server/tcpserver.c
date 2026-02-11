@@ -1,21 +1,26 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <poll.h>
 
-#define IP "127.0.0.1"
-#define PORT 5423
+//#define IP "127.0.0.1"
+//#define PORT 5423
 
-#define BACKLOG 1
+#define BACKLOG 5
 #define TIMEOUT 2000
 
 #define BUFFER_SIZE 8192
 
-int main(void) {
+int main(int argc, char *argv[]) {
+    if (argc != 3) {
+        printf("Usage: ./tcpserver <IP> <PORT>");
+        return 1;
+    }
 
     int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd < 0) {
@@ -29,8 +34,8 @@ int main(void) {
     memset(&peer, 0, addr_size);
 
     server.sin_family = AF_INET;
-    server.sin_port = htons(PORT);
-    server.sin_addr.s_addr = inet_addr(IP);
+    server.sin_port = htons(atoi(argv[2]));
+    server.sin_addr.s_addr = inet_addr(argv[1]);
 
     int client_fd = -1;
 
@@ -53,32 +58,32 @@ int main(void) {
     char buffer[BUFFER_SIZE] = "";
 
     for (;;) {
-        // check if return event is POLLIN using &
-        // == only works if nothing else is set
         int r = poll(pollt, size, TIMEOUT);
-        if (r > 0 && (pollt[0].revents & POLLIN))
-            break;
-        else if (r == -1) {
+        if (r > 0 && (pollt[0].revents & POLLIN)) {
+            if ((client_fd = accept(socket_fd, (struct sockaddr *)&peer, &addr_size)) == -1) {
+                perror("Accept");
+                goto cleanup;
+            } else {
+                char client_ip[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &(peer.sin_addr.s_addr), client_ip, INET_ADDRSTRLEN);
+                printf("[client connected: %s]\n", client_ip);
+                for (;;) {
+                    ssize_t red = read(client_fd, &buffer, sizeof(buffer));
+                    if (red < 0) {
+                        perror("Read");
+                        break;
+                    } else if (red == 0) {
+                        printf("[client disconnected]\n");
+                        break;
+                    }
+                    fwrite(&buffer, 1, red, stdout);
+                    fflush(stdout);
+                }
+            }
+        } else if (r == -1) {
             perror("Poll");
             goto cleanup;
         }
-
-    }
-    // accept
-    if ((client_fd = accept(socket_fd, (struct sockaddr *)&peer, &addr_size)) == -1) {
-        perror("Accept");
-        goto cleanup;
-    }
-
-    for (;;) {
-        ssize_t red = read(client_fd, &buffer, sizeof(buffer));
-        if (red < 0) {
-            perror("Read");
-            break;
-        }
-
-        fwrite(&buffer, 1, red, stdout);
-        fflush(stdout);
     }
 
     // clean up

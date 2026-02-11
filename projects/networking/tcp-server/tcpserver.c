@@ -45,7 +45,6 @@ int main(int argc, char *argv[]) {
         perror("Listen");
         goto cleanup;
     }
-    // select
 
     struct pollfd pollt[] = {
         { .fd = socket_fd, .events = POLLIN, .revents = 0 }
@@ -83,7 +82,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // clean up
 cleanup:
     close(socket_fd);
     if (client_fd != -1) close(client_fd);

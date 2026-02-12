@@ -8,7 +8,7 @@
 #include <arpa/inet.h>
 #include <poll.h>
 
-#define BACKLOG 5
+#define BACKLOG 10
 #define TIMEOUT 2000
 
 #define BUFFER_SIZE 8192
@@ -17,12 +17,12 @@
 
 int main(int argc, char *argv[]) {
     if (argc != 3) {
-        printf("Usage: ./tcpserver <IP> <PORT>");
+        printf("Usage: ./tcpserver <IP> <PORT>\n");
         return 1;
     }
     int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd < 0) {
-        perror("Socket error");
+        perror("Socket error\n");
         return 1;
     }
     struct sockaddr_in server, peer;
@@ -34,11 +34,11 @@ int main(int argc, char *argv[]) {
     server.sin_addr.s_addr = inet_addr(argv[1]);
 
     if (bind(socket_fd, (struct sockaddr *)&server, addr_size) == -1) {
-        perror("Bind");
+        perror("Bind\n");
         goto cleanup;
     }
     if (listen(socket_fd, BACKLOG) == -1) {
-        perror("Listen");
+        perror("Listen\n");
         goto cleanup;
     }
 
@@ -58,12 +58,12 @@ int main(int argc, char *argv[]) {
         if (r > 0 && (pollt[0].revents & POLLIN)) {
             int client_fd = accept(socket_fd, (struct sockaddr *)&peer, &addr_size);
             if (client_fd == -1) {
-                perror("Accept");
+                perror("Accept\n");
                 continue;
             } else {
                 char client_ip[INET_ADDRSTRLEN];
                 inet_ntop(AF_INET, &(peer.sin_addr.s_addr), client_ip, INET_ADDRSTRLEN);
-                printf("[client connected: %s]\n", client_ip);
+                printf("\n[client connected: %s]\n", client_ip);
                 for (int i = 1; i <= MAX_CLIENTS; i++) {
                     if (pollt[i].fd == -1) {
                         pollt[i].fd = client_fd;
@@ -78,11 +78,11 @@ int main(int argc, char *argv[]) {
             if (pollt[i].fd != -1 && (pollt[i].revents & POLLIN)) {
                 ssize_t red = read(pollt[i].fd, buffer, sizeof(buffer));
                 if (red < 0) {
-                    perror("Read");
+                    perror("Read\n");
                     close(pollt[i].fd);
                     pollt[i].fd = -1;
                 } else if (red == 0) {
-                    printf("[client disconnected]\n");
+                    printf("\n[client disconnected]\n");
                     close(pollt[i].fd);
                     pollt[i].fd = -1;
                 } else {
@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
             }
         }
         if (r == -1) {
-            perror("Poll");
+            perror("Poll\n");
             goto cleanup;
         }
     }
@@ -102,5 +102,5 @@ cleanup:
     for (int i = 1; i < nfds; i++) {
         if (pollt[i].fd != -1) close(pollt[i].fd);
     }
-    return 1;
+    return 0;
 }

@@ -7,10 +7,11 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#define NUMBER 10
+#define MESSAGE "Hello world"
+
 int connectf(int socket_fd, char *argv[], struct sockaddr_in *server);
 void sendf(int socket_fd);
-
-static char *message = "Hello world";
 
 int main(int argc, char *argv[]) {
         if (argc != 3) {
@@ -49,8 +50,8 @@ int connectf(int socket_fd, char *argv[], struct sockaddr_in *server) {
 
 void sendf(int socket_fd) {
     int n;
-    for (int i = 0; i < 10; i++) {
-        if ((n = write(socket_fd, message, strlen(message))) <= 0) {
+    for (int i = 0; i < NUMBER; i++) {
+        if ((n = write(socket_fd, MESSAGE, strlen(MESSAGE))) <= 0) {
             printf("Connection closed");
             return;
         }

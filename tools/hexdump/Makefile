@@ -1,9 +1,9 @@
 .PHONY: all install clean uninstall
 
-all: hex3
+all: main
 
-hex3: hex3.c
-	gcc -Wall -Wextra hex3.c -o hex3
+main: main.c
+	gcc -Wall -Wextra main.c -o hex3
 install: hex3
 	install -m 755 hex3 /usr/local/bin/hex3
 clean:

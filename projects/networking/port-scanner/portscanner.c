@@ -19,10 +19,11 @@
 #include <arpa/inet.h>
 
 #define SIZE 4096
+#define IP_SIZE 20
 
 typedef struct {
-   char src_ip[20];
-   char dst_ip[20];
+   char src_ip[IP_SIZE];
+   char dst_ip[IP_SIZE];
    int src_port;
    int port_start;
    int port_end;
@@ -50,7 +51,7 @@ int main(int argc, char *argv[]) {
    }
 
    //get local ip
-   char src_ip[20];
+   char src_ip[IP_SIZE];
    if (local_ipget(src_ip) != 0)
       return 1;
 

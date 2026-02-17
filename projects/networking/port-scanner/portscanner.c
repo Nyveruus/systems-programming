@@ -20,6 +20,7 @@
 
 #define SIZE 4096
 #define IP_SIZE 20
+#define SOURCE_PORT 45677
 
 typedef struct {
    char src_ip[IP_SIZE];
@@ -58,6 +59,12 @@ int main(int argc, char *argv[]) {
    // build config
    scan_config config;
    strncpy(config.src_ip, src_ip, sizeof(config.src_ip));
+   strncpy(config.dst_ip, target, sizeof(config.dst_ip));
+   config.src_port = SOURCE_PORT;
+   config.port_start = start;
+   config.dest = dest;
+
+   printf("Scanning ports %i-%i %s", start, end, target);
 
    //start thread to listen for synacks
    //send syns (syn scan)
@@ -75,7 +82,7 @@ int local_ipget(char *src) {
    struct sockaddr_in r;
    memset(&remote, 0, sizeof(r));
    r.sin_family = AF_INET;
-   R.sin_port = htons(80);
+   r.sin_port = htons(80);
    remote.sin_addr.s_addr = inet_addr("1.1.1.1");
 
    if (connect(sock, (struct sockaddr *)&r, sizeof(r)) < 0) {
@@ -86,6 +93,8 @@ int local_ipget(char *src) {
 
    struct sockaddr_in loc;
    socklen_t len = sizeof(loc);
+
+   //getsockname returns the address that the socket is bound on
    if (getsockname(sock, (struct sockaddr *)&loc, &len) < 0) {
       perror("getsockname");
       close(sock);

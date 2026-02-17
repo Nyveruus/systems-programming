@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <pthread.h>
 
@@ -18,6 +19,17 @@
 #include <arpa/inet.h>
 
 #define SIZE 4096
+
+typedef struct {
+   char src_ip[20];
+   char dst_ip[20];
+   int src_port;
+   int port_start;
+   int port_end;
+   struct in_addr dest;
+} scan_config;
+
+//pseudo header
 
 int main(int argc, char *argv[]) {
    if (argc < 4) {
@@ -42,7 +54,9 @@ int main(int argc, char *argv[]) {
    if (local_ipget(src_ip) != 0)
       return 1;
 
-   int src_port = 45677;
+   // build config
+   scan_config config;
+   strncpy(config.src_ip, src_ip, sizeof(config.src_ip));
 
    //start thread to listen for synacks
    //send syns (syn scan)
@@ -51,7 +65,34 @@ int main(int argc, char *argv[]) {
 
 //find local ip, udp socket trick
 int local_ipget(char *src) {
+   int sock = socket(AF_INET, SOCK_DGRAM, 0);
+   if (sock < 0) {
+      perror("socket");
+      return 1;
+   }
 
+   struct sockaddr_in r;
+   memset(&remote, 0, sizeof(r));
+   r.sin_family = AF_INET;
+   R.sin_port = htons(80);
+   remote.sin_addr.s_addr = inet_addr("1.1.1.1");
+
+   if (connect(sock, (struct sockaddr *)&r, sizeof(r)) < 0) {
+      perror("connect");
+      close(sock);
+      return 1;
+   }
+
+   struct sockaddr_in loc;
+   socklen_t len = sizeof(loc);
+   if (getsockname(sock, (struct sockaddr *)&loc, &len) < 0) {
+      perror("getsockname");
+      close(sock);
+      return 1;
+   }
+   strncpy(src, inet_ntoa(loc.sin_addr), 19);
+   close(sock);
+   return 0;
 }
 
 //init scan config?

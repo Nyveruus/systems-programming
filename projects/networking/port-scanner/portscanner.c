@@ -22,6 +22,9 @@
 #define IP_SIZE 20
 #define SOURCE_PORT 45677
 
+int local_ipget(char *src);
+void *listen_synacks(void *arg);
+
 typedef struct {
    char src_ip[IP_SIZE];
    char dst_ip[IP_SIZE];
@@ -51,7 +54,6 @@ int main(int argc, char *argv[]) {
       return 1;
    }
 
-   //get local ip
    char src_ip[IP_SIZE];
    if (local_ipget(src_ip) != 0)
       return 1;
@@ -67,6 +69,11 @@ int main(int argc, char *argv[]) {
    printf("Scanning ports %i-%i %s", start, end, target);
 
    //start thread to listen for synacks
+   pthread_t tid;
+   if (pthread_create(&tid, NULL, listen_synacks, &config) != 0) {
+      perror("pthread");
+      return 1;
+   }
    //send syns (syn scan)
 
 }
@@ -105,10 +112,14 @@ int local_ipget(char *src) {
    return 0;
 }
 
+//listen for synacks pthread
+void *listen_synacks(void *arg) {
+   scan_config *config = (scan_config *)arg;
+}
+
 //init scan config?
 //ip header
 //tcp header
-//listen for synacks
 //process packets
 //syn scan
 //ip checksum

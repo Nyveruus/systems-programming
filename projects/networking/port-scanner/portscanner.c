@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <errno.h> //for checking EINTR
 #include <pthread.h>
@@ -75,8 +76,18 @@ int main(int argc, char *argv[]) {
       return 1;
    }
    pthread_detach(tid);
-   //send syns (syn scan)
+   //sleep 0.1s
+   usleep(100000);
 
+   //send syns (syn scan)
+   for (int i = start; i <= end; i++) {
+      if (syn_scan(&config, i) != 0)
+         fprintf(stderr, "Failed to send syn to port %i\n", i);
+      usleep(5000);
+   }
+   sleep(2);
+   fprintf(stdout, "Finished\n");
+   return 0;
 }
 
 //find local ip (necessary to construct packets), udp socket trick
@@ -146,6 +157,7 @@ void *listen_synacks(void *arg) {
    return NULL;
 }
 
+//process incoming packets
 void process(unsigned char *buffer, int length, scan_config *config) {
    //only TCP, only packets aimed at source , if syn and ack received then port open, else if RST received then closed port
    struct iphdr *iph = (struct iphdr *)buffer;
@@ -168,10 +180,13 @@ void process(unsigned char *buffer, int length, scan_config *config) {
    return;
 }
 
+//syn scan
+int syn_scan(scan_config *config, int port) {
+
+}
+
 //ip header
 //tcp header
-//process packets
-//syn scan
 //ip checksum
 //tcp checksum
 

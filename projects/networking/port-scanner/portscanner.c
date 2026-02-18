@@ -74,6 +74,7 @@ int main(int argc, char *argv[]) {
       perror("pthread");
       return 1;
    }
+   pthread_detach(tid);
    //send syns (syn scan)
 
 }

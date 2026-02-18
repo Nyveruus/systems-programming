@@ -121,9 +121,25 @@ void *listen_synacks(void *arg) {
       perror("socket");
       return NULL;
    }
+
+   unsigned buffer[SIZE];
+   /*
+   Because raw sockets are being used, bind, listen, select, accept are unnecessary they are for tcp connections managed by kernel
+   With sockraw there is no concept of connection and handshake unless it is implemented manually, so we will read packets and
+   filter for synacks
+   */
+   for (;;) {
+      int readv = read()
+      if (readv <= 0) {
+
+      }
+      //call func
+   }
+
+   close(socket);
+   return NULL;
 }
 
-//init scan config?
 //ip header
 //tcp header
 //process packets

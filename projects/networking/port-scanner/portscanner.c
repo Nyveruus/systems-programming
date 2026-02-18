@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <errno.h> //for checking EINTR
 #include <pthread.h>
 
 #include <sys/socket.h>
@@ -22,6 +23,7 @@
 
 int local_ipget(char *src);
 void *listen_synacks(void *arg);
+void process(unsigned char *buffer, int length, scan_config *config);
 
 typedef struct {
    char src_ip[IP_SIZE];
@@ -64,7 +66,7 @@ int main(int argc, char *argv[]) {
    config.port_start = start;
    config.dest = dest;
 
-   printf("Scanning ports %i-%i %s", start, end, target);
+   fprintf(stdout, "Scanning ports %i-%i %s\n", start, end, target);
 
    //start thread to listen for synacks
    pthread_t tid;
@@ -76,7 +78,7 @@ int main(int argc, char *argv[]) {
 
 }
 
-//find local ip, udp socket trick
+//find local ip (necessary to construct packets), udp socket trick
 int local_ipget(char *src) {
    //This works by creating a udp socket and using the getsockname function to find local IP, packets are never sent or read.
    int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -113,6 +115,11 @@ int local_ipget(char *src) {
 
 //listen for synacks pthread
 void *listen_synacks(void *arg) {
+   /*
+    Because raw sockets are being used, bind, listen, select, accept are unnecessary they are for tcp connections managed by kernel
+    With sockraw there is no concept of connection and handshake unless it is implemented manually, so we will just read packets and
+    filter for synacks
+    */
    scan_config *config = (scan_config *)arg;
 
    int socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
@@ -122,14 +129,12 @@ void *listen_synacks(void *arg) {
    }
 
    unsigned char buffer[SIZE];
-   /*
-   Because raw sockets are being used, bind, listen, select, accept are unnecessary they are for tcp connections managed by kernel
-   With sockraw there is no concept of connection and handshake unless it is implemented manually, so we will just read packets and
-   filter for synacks
-   */
+
    for (;;) {
       int readv = read(socket, buffer, SIZE);
       if (readv < 0) {
+         //EINTR is not a real error, so we don't want to break the loop if that signal arrives
+         if (errno == EINTR) continue;
          perror("read");
          break;
       }
@@ -141,7 +146,25 @@ void *listen_synacks(void *arg) {
 }
 
 void process(unsigned char *buffer, int length, scan_config *config) {
+   //only TCP, only packets aimed at source , if syn and ack received then port open, else if RST received then closed port
+   struct iphdr *iph = (struct iphdr *)buffer;
+   if (iph->protocol != IPPROTO_TCP)
+      return;
+   if (iph->saddr != config->dest.s_addr)
+      return;
 
+   int iph_len = iph->ihl * 4;
+   struct tcphdr *tcph = (struct tcphdr *)(buffer + iph_len);
+
+   if (ntohs(tcph->dest) != config->src_port)
+      return;
+   int src_port = ntohs(tcph->source);
+   if (src_port < config->port_start || src_port > config->port_end)
+      return;
+
+   if (tcph->syn && tcph->ack) {
+      fprintf(stdout, "Port %i open (syn-ack received)\n", src_port);
+   return;
 }
 
 //ip header

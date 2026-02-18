@@ -6,8 +6,6 @@
    https://www.rfc-editor.org/rfc/rfc791
 */
 
-// set up scan config struct (src ip, port, start, end)
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -80,6 +78,7 @@ int main(int argc, char *argv[]) {
 
 //find local ip, udp socket trick
 int local_ipget(char *src) {
+   //This works by creating a udp socket and using the getsockname function to find local IP, packets are never sent or read.
    int sock = socket(AF_INET, SOCK_DGRAM, 0);
    if (sock < 0) {
       perror("socket");
@@ -125,7 +124,7 @@ void *listen_synacks(void *arg) {
    unsigned char buffer[SIZE];
    /*
    Because raw sockets are being used, bind, listen, select, accept are unnecessary they are for tcp connections managed by kernel
-   With sockraw there is no concept of connection and handshake unless it is implemented manually, so we will read packets and
+   With sockraw there is no concept of connection and handshake unless it is implemented manually, so we will just read packets and
    filter for synacks
    */
    for (;;) {

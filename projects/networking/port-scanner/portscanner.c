@@ -115,6 +115,12 @@ int local_ipget(char *src) {
 //listen for synacks pthread
 void *listen_synacks(void *arg) {
    scan_config *config = (scan_config *)arg;
+
+   int socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+   if (socket < 0) {
+      perror("socket");
+      return NULL;
+   }
 }
 
 //init scan config?

@@ -202,9 +202,13 @@ int syn_scan(scan_config *config, int port) {
 
 
 
-   close(socket);
 
-   return 0;
+   close(socket);
+   if (/*sent*/ < 0) {
+      return 1;
+   } else {
+      return 0;
+   }
 
 }
 

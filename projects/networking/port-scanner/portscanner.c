@@ -25,6 +25,7 @@
 int local_ipget(char *src);
 void *listen_synacks(void *arg);
 void process(unsigned char *buffer, int length, scan_config *config);
+int syn_scan(scan_config *config, int port);
 
 typedef struct {
    char src_ip[IP_SIZE];
@@ -180,8 +181,27 @@ void process(unsigned char *buffer, int length, scan_config *config) {
    return;
 }
 
-//syn scan
+//syn scan: send syn to config destination IP and port
 int syn_scan(scan_config *config, int port) {
+   //setsockopt specifies to the kernel that we supply the IP header
+   int socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+   if (socket < 0) {
+      perror("socket");
+      return 1;
+   }
+   int o = 1;
+   if (setsockopt(socket, IPPROTO_TCP, IP_HDRINCL, &o, sizeof(o)) < 0) {
+      perror("setsockopt");
+      close(socket);
+      return 1;
+   }
+
+   char packet[sizeof(struct iphdr) + sizeof(struct tcphdr)];
+   memset(packet, 0, sizeof(packet));
+
+
+   close(socket);
+   return 0;
 
 }
 

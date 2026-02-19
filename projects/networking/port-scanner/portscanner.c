@@ -235,6 +235,7 @@ void build_iph(struct iphdr *iph, scan_config *config) {
    iph->check = 0; //initialize
    iph->saddr = inet_addr(config->src_ip);
    iph->daddr = config->dest.s_addr;
+
    iph->check = //checksum
 }
 //tcp header

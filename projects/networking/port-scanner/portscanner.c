@@ -183,8 +183,10 @@ void process(unsigned char *buffer, int length, scan_config *config) {
 
 //syn scan: send syn to config destination IP and port
 int syn_scan(scan_config *config, int port) {
-   //setsockopt specifies to the kernel that we supply the IP header
-   //write requires an associated address, sendto is better because we can specify destination per call
+   /*
+   setsockopt specifies to the kernel that we supply the IP header
+   write requires an associated address, sendto is better because we can specify destination per call
+   */
    int socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
    if (socket < 0) {
       perror("socket");
@@ -216,15 +218,16 @@ int syn_scan(scan_config *config, int port) {
    int sent = sendto(socket, packet, sizeof(packet), 0, (struct sockaddr *)&dest, sizeof(dest));
 
    close(socket);
-   if (sent < 0) {
-      return 1;
-   } else {
-      return 0;
-   }
-
+   return sent < 0 ? 1 : 0;
 }
 
 //ip header
+void build_iph(struct iphdr *iph, scan_config *config, int port) {
+   return;
+}
 //tcp header
+void build_tcph(struct tcphdr *tcph, scan_config *config, int port) {
+   return;
+}
 //ip and tcp checksums
 

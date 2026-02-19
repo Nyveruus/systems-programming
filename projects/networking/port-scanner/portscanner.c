@@ -16,6 +16,7 @@
 
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/ip.h>
 #include <arpa/inet.h>
 
 #define SIZE 4096
@@ -222,8 +223,19 @@ int syn_scan(scan_config *config, int port) {
 }
 
 //ip header
-void build_iph(struct iphdr *iph, scan_config *config, int port) {
-   return;
+void build_iph(struct iphdr *iph, scan_config *config) {
+   iph->ihl = 5;
+   iph->version = 4;
+   iph->tos = 0;
+   iph->tot_len = htons(sizeof(struct iphdr) + sizeof(struct tcphdr));
+   iph->id = htons((uint16_t)rand());
+   iph->frag_off = 0;
+   iph->ttl = 64;
+   iph->protocol = IPPROTO_TCP;
+   iph->check = 0; //initialize
+   iph->saddr = inet_addr(config->src_ip);
+   iph->daddr = config->dest.s_addr;
+   iph->check = //checksum
 }
 //tcp header
 void build_tcph(struct tcphdr *tcph, scan_config *config, int port) {

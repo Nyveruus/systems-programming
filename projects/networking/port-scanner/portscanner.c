@@ -199,12 +199,24 @@ int syn_scan(scan_config *config, int port) {
 
    char packet[sizeof(struct iphdr) + sizeof(struct tcphdr)];
    memset(packet, 0, sizeof(packet));
+   //create the headers inside of the packet through casting and pointer arithmetic
+   struct iphdr *iph = (struct iphdr *)packet;
+   struct tcphdr *tcph = (struct tcphdr *)(packet + sizeof(struct iphdr));
 
+   build_iph(iph, config, port);
+   build_tcph(tcph, config, port);
+   //checksums
 
+   struct sockaddr_in dest;
+   memset(&dest, 0, sizeof(dest));
+   dest.sin_family = AF_INET;
+   dest.sin_port = htons(port);
+   dest.sin_addr.s_addr = config->dest.s_addr;
 
+   int sent = sendto(socket, packet, sizeof(packet), 0, (struct sockaddr *)&dest, sizeof(dest));
 
    close(socket);
-   if (/*sent*/ < 0) {
+   if (sent < 0) {
       return 1;
    } else {
       return 0;
@@ -214,6 +226,5 @@ int syn_scan(scan_config *config, int port) {
 
 //ip header
 //tcp header
-//ip checksum
-//tcp checksum
+//ip and tcp checksums
 

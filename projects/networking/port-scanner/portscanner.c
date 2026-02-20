@@ -24,6 +24,7 @@
 #define SIZE 4096
 #define IP_SIZE 20
 #define SOURCE_PORT 45677
+#define WINDOW_SIZE 65545
 
 int local_ipget(char *src);
 void *listen_synacks(void *arg);
@@ -44,14 +45,13 @@ typedef struct {
 } scan_config;
 
 typedef struct {
-   uint32_t source_addr
-   uint32_t des_addr
-   uint8_t zero
-   uint8_t protocol
-   uint16_t tcp_len
+   uint32_t source_addr;
+   uint32_t dest_addr;
+   uint8_t zero;
+   uint8_t protocol;
+   uint16_t tcp_len;
 } pseudo_header;
 //pseudo header adapted from RFC 793, 96 bit size
-
 
 int main(int argc, char *argv[]) {
    if (argc < 4) {
@@ -260,7 +260,7 @@ void build_tcph(struct tcphdr *tcph, struct iphdr *iph, scan_config *config, int
    tcph->ack_seq = 0;
    tcph->doff = 5;
    tcph->syn = 1;
-   tcph->window = htons(65545); //how much until ack
+   tcph->window = htons(WINDOW_SIZE); //how much until ack
    tcph->check = 0;
    tcph->urg_ptr = 0;
 
@@ -281,7 +281,21 @@ uint16_t checksum(const void *data, int len) {
    sum += (sum >> 16);
    return ~sum;
 }
+
 //tcp checksum preparation: combining pseudo header and tcp header
 uint16_t tcp_checksum(struct tcphdr *tcph, struct iphdr *iph) {
    //fill pseudo header, the ncombine pseudo header and tcp header into one buffer before returning the checksum() of them
+   pseudo_header pseudo;
+   pseudo.source_addr = iph->saddr;
+   pseudo.dest_addr = iph->daddr;
+   pseudo.zero = 0;
+   pseudo.protocol = IPPROTO_TCP;
+   pseudo.tcp_len = htons(sizeof(struct tcphdr));
+
+   char buffer[sizeof(pseudo_header) + sizeof(struct tcphdr)];
+   //put pseudo header into buffer and then use poitner arithmetic to put tcph directly after
+   memcpy(buffer, &pseudo, sizeof(pseudo_header));
+   memcpy(buffer + sizeof(pseudo_header), tcph, sizeof(struct tcphdr));
+
+   return checksum(buffer, sizeof(buffer));
 }

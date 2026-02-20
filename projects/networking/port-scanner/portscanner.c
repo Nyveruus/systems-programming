@@ -86,6 +86,7 @@ int main(int argc, char *argv[]) {
    strncpy(config.dst_ip, target, sizeof(config.dst_ip));
    config.src_port = SOURCE_PORT;
    config.port_start = start;
+   config.port_end = end;
    config.dest = dest;
 
    fprintf(stdout, "Scanning ports %i-%i %s\n", start, end, target);

@@ -27,6 +27,9 @@ int local_ipget(char *src);
 void *listen_synacks(void *arg);
 void process(unsigned char *buffer, int length, scan_config *config);
 int syn_scan(scan_config *config, int port);
+void build_iph(struct iphdr *iph, scan_config *config);
+void build_tcph(struct tcphdr *tcph, scan_config *config, int port);
+uint16_t checksum(void *headers, int size);
 
 typedef struct {
    char src_ip[IP_SIZE];
@@ -230,17 +233,21 @@ void build_iph(struct iphdr *iph, scan_config *config) {
    iph->tot_len = htons(sizeof(struct iphdr) + sizeof(struct tcphdr));
    iph->id = htons((uint16_t)rand());
    iph->frag_off = 0;
-   iph->ttl = 64;
+   iph->ttl = 64;headers individually and then
    iph->protocol = IPPROTO_TCP;
    iph->check = 0; //initialize
    iph->saddr = inet_addr(config->src_ip);
    iph->daddr = config->dest.s_addr;
 
-   iph->check = //checksum
+   iph->check = checksum(iph, sizeof(iphdr));
 }
 //tcp header
 void build_tcph(struct tcphdr *tcph, scan_config *config, int port) {
    return;
 }
-//ip and tcp checksums
 
+//checksum: for iph and tcp (after tcp has been properly processed with pseudo header)
+uint16_t checksum(void *headers, int size) {
+
+}
+//tcp checksum preparation: combining pseudo header and tcp header

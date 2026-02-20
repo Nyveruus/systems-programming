@@ -25,7 +25,7 @@
 #define SIZE 4096
 #define IP_SIZE 20
 #define SOURCE_PORT 45677
-#define WINDOW_SIZE 65545
+#define WINDOW_SIZE 65535
 
 typedef struct {
    char src_ip[IP_SIZE];
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
    int end = atoi(argv[3]);
    struct in_addr dest;
 
-   if (inet_addr(target) != -1)
+   if (inet_addr(target) != INADDR_NONE)
       dest.s_addr = inet_addr(target);
    else {
       fprintf(stderr, "IP invalid\n");
@@ -181,6 +181,10 @@ void *listen_synacks(void *arg) {
 //process incoming packets
 void process(unsigned char *buffer, int length, scan_config *config) {
    //only TCP, only packets aimed at source , if syn and ack received then port open, else if RST received then closed port
+   //sanity check
+   if (length < (int)(sizeof(struct iphdr) + sizeof(struct tcphdr)))
+      return;
+
    struct iphdr *iph = (struct iphdr *)buffer;
    if (iph->protocol != IPPROTO_TCP)
       return;

@@ -27,11 +27,14 @@
 #define WINDOW_SIZE 65545
 
 int local_ipget(char *src);
+
 void *listen_synacks(void *arg);
 void process(unsigned char *buffer, int length, scan_config *config);
+
 int syn_scan(scan_config *config, int port);
 void build_iph(struct iphdr *iph, scan_config *config);
 void build_tcph(struct tcphdr *tcph, struct iphdr *iph, scan_config *config, int port);
+
 uint16_t checksum(void *headers, int size);
 uint16_t tcp_checksum(struct tcphdr *tcph, struct iphdr *iph);
 
@@ -220,9 +223,9 @@ int syn_scan(scan_config *config, int port) {
    struct iphdr *iph = (struct iphdr *)packet;
    struct tcphdr *tcph = (struct tcphdr *)(packet + sizeof(struct iphdr));
 
+   //build headers and insert checksums
    build_iph(iph, config);
    build_tcph(tcph, iph, config, port);
-   //checksums
 
    struct sockaddr_in dest;
    memset(&dest, 0, sizeof(dest));

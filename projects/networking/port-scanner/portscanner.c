@@ -217,7 +217,7 @@ int syn_scan(scan_config *config, int port) {
       return 1;
    }
    int o = 1;
-   if (setsockopt(socket_fd, IPPROTO_TCP, IP_HDRINCL, &o, sizeof(o)) < 0) {
+   if (setsockopt(socket_fd, IPPROTO_IP, IP_HDRINCL, &o, sizeof(o)) < 0) {
       perror("setsockopt");
       close(socket_fd);
       return 1;

@@ -19,24 +19,13 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 
 #define SIZE 4096
 #define IP_SIZE 20
 #define SOURCE_PORT 45677
 #define WINDOW_SIZE 65545
-
-int local_ipget(char *src);
-
-void *listen_synacks(void *arg);
-void process(unsigned char *buffer, int length, scan_config *config);
-
-int syn_scan(scan_config *config, int port);
-void build_iph(struct iphdr *iph, scan_config *config);
-void build_tcph(struct tcphdr *tcph, struct iphdr *iph, scan_config *config, int port);
-
-uint16_t checksum(void *headers, int size);
-uint16_t tcp_checksum(struct tcphdr *tcph, struct iphdr *iph);
 
 typedef struct {
    char src_ip[IP_SIZE];
@@ -55,6 +44,19 @@ typedef struct {
    uint16_t tcp_len;
 } pseudo_header;
 //pseudo header adapted from RFC 793, 96 bit size
+
+int local_ipget(char *src);
+
+void *listen_synacks(void *arg);
+void process(unsigned char *buffer, int length, scan_config *config);
+
+int syn_scan(scan_config *config, int port);
+void build_iph(struct iphdr *iph, scan_config *config);
+void build_tcph(struct tcphdr *tcph, struct iphdr *iph, scan_config *config, int port);
+
+uint16_t checksum(void *headers, int size);
+uint16_t tcp_checksum(struct tcphdr *tcph, struct iphdr *iph);
+
 
 int main(int argc, char *argv[]) {
    if (argc < 4) {
@@ -119,10 +121,10 @@ int local_ipget(char *src) {
    }
 
    struct sockaddr_in r;
-   memset(&remote, 0, sizeof(r));
+   memset(&r, 0, sizeof(r));
    r.sin_family = AF_INET;
    r.sin_port = htons(80);
-   remote.sin_addr.s_addr = inet_addr("1.1.1.1");
+   r.sin_addr.s_addr = inet_addr("1.1.1.1");
 
    if (connect(sock, (struct sockaddr *)&r, sizeof(r)) < 0) {
       perror("connect");
@@ -153,8 +155,8 @@ void *listen_synacks(void *arg) {
     */
    scan_config *config = (scan_config *)arg;
 
-   int socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
-   if (socket < 0) {
+   int socket_fd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+   if (socket_fd < 0) {
       perror("socket");
       return NULL;
    }
@@ -162,7 +164,7 @@ void *listen_synacks(void *arg) {
    unsigned char buffer[SIZE];
 
    for (;;) {
-      int readv = read(socket, buffer, SIZE);
+      int readv = read(socket_fd, buffer, SIZE);
       if (readv < 0) {
          //EINTR is not a real error, so we don't want to break the loop if that signal arrives
          if (errno == EINTR) continue;
@@ -172,7 +174,7 @@ void *listen_synacks(void *arg) {
       //call func to read and filter for packets
       process(buffer, readv, config);
    }
-   close(socket);
+   close(socket_fd);
    return NULL;
 }
 
@@ -194,7 +196,7 @@ void process(unsigned char *buffer, int length, scan_config *config) {
    if (src_port < config->port_start || src_port > config->port_end)
       return;
 
-   if (tcph->syn && tcph->ack) {
+   if (tcph->syn && tcph->ack)
       fprintf(stdout, "Port %i open (syn-ack received)\n", src_port);
    return;
 }
@@ -205,15 +207,15 @@ int syn_scan(scan_config *config, int port) {
    setsockopt specifies to the kernel that we supply the IP header
    write requires an associated address, sendto is better because we can specify destination per call
    */
-   int socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
-   if (socket < 0) {
+   int socket_fd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+   if (socket_fd < 0) {
       perror("socket");
       return 1;
    }
    int o = 1;
-   if (setsockopt(socket, IPPROTO_TCP, IP_HDRINCL, &o, sizeof(o)) < 0) {
+   if (setsockopt(socket_fd, IPPROTO_TCP, IP_HDRINCL, &o, sizeof(o)) < 0) {
       perror("setsockopt");
-      close(socket);
+      close(socket_fd);
       return 1;
    }
 
@@ -233,9 +235,9 @@ int syn_scan(scan_config *config, int port) {
    dest.sin_port = htons(port);
    dest.sin_addr.s_addr = config->dest.s_addr;
 
-   int sent = sendto(socket, packet, sizeof(packet), 0, (struct sockaddr *)&dest, sizeof(dest));
+   int sent = sendto(socket_fd, packet, sizeof(packet), 0, (struct sockaddr *)&dest, sizeof(dest));
 
-   close(socket);
+   close(socket_fd);
    return sent < 0 ? 1 : 0;
 }
 
@@ -247,13 +249,13 @@ void build_iph(struct iphdr *iph, scan_config *config) {
    iph->tot_len = htons(sizeof(struct iphdr) + sizeof(struct tcphdr));
    iph->id = htons((uint16_t)rand());
    iph->frag_off = 0;
-   iph->ttl = 64;headers individually and then
+   iph->ttl = 64;
    iph->protocol = IPPROTO_TCP;
    iph->check = 0; //initialize
    iph->saddr = inet_addr(config->src_ip);
    iph->daddr = config->dest.s_addr;
 
-   iph->check = checksum(iph, sizeof(iphdr));
+   iph->check = checksum(iph, sizeof(struct iphdr));
 }
 //tcp header
 void build_tcph(struct tcphdr *tcph, struct iphdr *iph, scan_config *config, int port) {
@@ -271,7 +273,7 @@ void build_tcph(struct tcphdr *tcph, struct iphdr *iph, scan_config *config, int
 }
 
 //checksum: for iph and tcp (after tcp has been properly processed with pseudo header)
-uint16_t checksum(const void *data, int len) {
+uint16_t checksum(void *data, int len) {
    uint16_t *p = data;
    uint32_t sum = 0;
 

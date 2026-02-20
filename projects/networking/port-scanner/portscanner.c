@@ -4,6 +4,8 @@
 
    https://www.rfc-editor.org/rfc/rfc793
    https://www.rfc-editor.org/rfc/rfc791
+
+   https://www.geeksforgeeks.org/computer-networks/calculation-of-tcp-checksum/
 */
 
 #include <stdio.h>
@@ -28,8 +30,9 @@ void *listen_synacks(void *arg);
 void process(unsigned char *buffer, int length, scan_config *config);
 int syn_scan(scan_config *config, int port);
 void build_iph(struct iphdr *iph, scan_config *config);
-void build_tcph(struct tcphdr *tcph, scan_config *config, int port);
+void build_tcph(struct tcphdr *tcph, struct iphdr *iph, scan_config *config, int port);
 uint16_t checksum(void *headers, int size);
+uint16_t tcp_checksum(struct tcphdr *tcph, struct iphdr *iph);
 
 typedef struct {
    char src_ip[IP_SIZE];
@@ -40,7 +43,15 @@ typedef struct {
    struct in_addr dest;
 } scan_config;
 
-//pseudo header
+typedef struct {
+   uint32_t source_addr
+   uint32_t des_addr
+   uint8_t zero
+   uint8_t protocol
+   uint16_t tcp_len
+} pseudo_header;
+//pseudo header adapted from RFC 793, 96 bit size
+
 
 int main(int argc, char *argv[]) {
    if (argc < 4) {
@@ -209,8 +220,8 @@ int syn_scan(scan_config *config, int port) {
    struct iphdr *iph = (struct iphdr *)packet;
    struct tcphdr *tcph = (struct tcphdr *)(packet + sizeof(struct iphdr));
 
-   build_iph(iph, config, port);
-   build_tcph(tcph, config, port);
+   build_iph(iph, config);
+   build_tcph(tcph, iph, config, port);
    //checksums
 
    struct sockaddr_in dest;
@@ -242,12 +253,35 @@ void build_iph(struct iphdr *iph, scan_config *config) {
    iph->check = checksum(iph, sizeof(iphdr));
 }
 //tcp header
-void build_tcph(struct tcphdr *tcph, scan_config *config, int port) {
-   return;
+void build_tcph(struct tcphdr *tcph, struct iphdr *iph, scan_config *config, int port) {
+   tcph->source = htons(config->src_port);
+   tcph->dest = htons(port);
+   tcph->seq = htonl(rand());
+   tcph->ack_seq = 0;
+   tcph->doff = 5;
+   tcph->syn = 1;
+   tcph->window = htons(65545); //how much until ack
+   tcph->check = 0;
+   tcph->urg_ptr = 0;
+
+   tcph->check = tcp_checksum(tcph, iph);
 }
 
 //checksum: for iph and tcp (after tcp has been properly processed with pseudo header)
-uint16_t checksum(void *headers, int size) {
+uint16_t checksum(const void *data, int len) {
+   uint16_t *p = data;
+   uint32_t sum = 0;
 
+   for (; len > 1; len -= 2)
+      sum += *p++;
+   if (len == 1)
+      sum += *(uint8_t *)p;
+
+   sum = (sum >> 16) + (sum & 0xffff);
+   sum += (sum >> 16);
+   return ~sum;
 }
 //tcp checksum preparation: combining pseudo header and tcp header
+uint16_t tcp_checksum(struct tcphdr *tcph, struct iphdr *iph) {
+   //fill pseudo header, the ncombine pseudo header and tcp header into one buffer before returning the checksum() of them
+}

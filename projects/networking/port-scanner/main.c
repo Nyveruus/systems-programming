@@ -1,19 +1,9 @@
-/* https://linux.die.net/man/7/raw
-   https://www.binarytides.com/raw-sockets-c-code-linux/
-   https://thelinuxcode.com/socket-programming-in-c-building-networked-applications-from-the-ground-up/
-
-   https://www.rfc-editor.org/rfc/rfc793
-   https://www.rfc-editor.org/rfc/rfc791
-
-   https://www.geeksforgeeks.org/computer-networks/calculation-of-tcp-checksum/
-*/
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <errno.h> //for checking EINTR
+#include <errno.h>
 #include <pthread.h>
 
 #include <sys/socket.h>
@@ -43,7 +33,7 @@ typedef struct {
    uint8_t protocol;
    uint16_t tcp_len;
 } pseudo_header;
-//pseudo header adapted from RFC 793, 96 bit size
+//pseudo header adapted from RFC 793, 96 bits
 
 int local_ipget(char *src);
 
@@ -60,7 +50,7 @@ uint16_t tcp_checksum(struct tcphdr *tcph, struct iphdr *iph);
 
 int main(int argc, char *argv[]) {
    if (argc < 4) {
-      fprintf(stderr, "Usage: ./main <IP> <PORT START> <PORT END>\n");
+      fprintf(stderr, "Usage: ./portscanner <IP> <PORT START> <PORT END>\n");
       return 1;
    }
    //set important vars
@@ -89,7 +79,7 @@ int main(int argc, char *argv[]) {
    config.port_end = end;
    config.dest = dest;
 
-   fprintf(stdout, "Scanning ports %i-%i %s\n", start, end, target);
+   fprintf(stdout, "Scanning ports %i-%i on %s\n", start, end, target);
 
    //start thread to listen for synacks
    pthread_t tid;
@@ -187,8 +177,7 @@ void process(unsigned char *buffer, int length, scan_config *config) {
       return;
 
    struct iphdr *iph = (struct iphdr *)buffer;
-   if (iph->protocol != IPPROTO_TCP)
-      return;
+
    if (iph->saddr != config->dest.s_addr)
       return;
 
@@ -248,10 +237,11 @@ int syn_scan(scan_config *config, int port) {
 
 //ip header
 void build_iph(struct iphdr *iph, scan_config *config) {
+   //tot_len and check are always filled in and overwrriten by kernel in iph, redundant to set yourself. https://linux.die.net/man/7/raw
    iph->ihl = 5;
    iph->version = 4;
    iph->tos = 0;
-   iph->tot_len = htons(sizeof(struct iphdr) + sizeof(struct tcphdr));
+   iph->tot_len = 0;
    iph->id = htons((uint16_t)rand());
    iph->frag_off = 0;
    iph->ttl = 64;
@@ -259,8 +249,6 @@ void build_iph(struct iphdr *iph, scan_config *config) {
    iph->check = 0; //initialize
    iph->saddr = inet_addr(config->src_ip);
    iph->daddr = config->dest.s_addr;
-
-   iph->check = checksum(iph, sizeof(struct iphdr));
 }
 //tcp header
 void build_tcph(struct tcphdr *tcph, struct iphdr *iph, scan_config *config, int port) {
@@ -277,7 +265,7 @@ void build_tcph(struct tcphdr *tcph, struct iphdr *iph, scan_config *config, int
    tcph->check = tcp_checksum(tcph, iph);
 }
 
-//checksum: for iph and tcp (after tcp has been properly processed with pseudo header)
+//checksum: for tcph (after tcp has been properly processed with pseudo header)
 uint16_t checksum(void *data, int len) {
    uint16_t *p = data;
    uint32_t sum = 0;

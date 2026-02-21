@@ -50,7 +50,7 @@ uint16_t tcp_checksum(struct tcphdr *tcph, struct iphdr *iph);
 
 int main(int argc, char *argv[]) {
    if (argc < 4) {
-      fprintf(stderr, "Usage: ./portscanner <IP> <PORT START> <PORT END>\n");
+      fprintf(stderr, "Usage: portscanner <IP> <PORT START> <PORT END>\n");
       return 1;
    }
    //set important vars

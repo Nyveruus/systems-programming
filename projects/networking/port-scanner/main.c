@@ -66,6 +66,11 @@ int main(int argc, char *argv[]) {
       return 1;
    }
 
+   if (start < 1 || end > 65535 || start > end) {
+      fprintf(stderr, "Ports must be between 1 and 65535, and start <= end\n");
+      return 1;
+   }
+
    char src_ip[IP_SIZE];
    if (local_ipget(src_ip) != 0)
       return 1;
@@ -249,6 +254,8 @@ void build_iph(struct iphdr *iph, scan_config *config) {
    iph->check = 0; //initialize
    iph->saddr = inet_addr(config->src_ip);
    iph->daddr = config->dest.s_addr;
+
+   return;
 }
 //tcp header
 void build_tcph(struct tcphdr *tcph, struct iphdr *iph, scan_config *config, int port) {
@@ -263,6 +270,8 @@ void build_tcph(struct tcphdr *tcph, struct iphdr *iph, scan_config *config, int
    tcph->urg_ptr = 0;
 
    tcph->check = tcp_checksum(tcph, iph);
+
+   return;
 }
 
 //checksum: for tcph (after tcp has been properly processed with pseudo header)

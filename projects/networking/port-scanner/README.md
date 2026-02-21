@@ -2,6 +2,8 @@
 
 This is a modular SYN (half-open) port scanner with multithreading and raw packet construction. It builds IP and TCP headers from scratch and manually computes checksums for the headers. Raw packet construction is necessary for sending SYN packets and not completing the handshake.
 
+It takes three arguments: IP, start_port (1-65535), end_port (1-65535)
+
 ## Architecture
 
 The program begins with argument parsing and argument validation, then retrieving the local IP - which involves using a temporary udp socket (data is never sent) - for the future packet construction. It puts all important vars into a config that later gets passed around through a pointer. 

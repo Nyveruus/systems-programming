@@ -42,13 +42,17 @@ int main(int argc, char *argv[]) {
         goto cleanup;
     }
 
-    struct pollfd pollt[MAX_CLIENTS + 1];
+    struct pollfd pollt[MAX_CLIENTS + 2];
     pollt[0].fd = socket_fd;
     pollt[0].events = POLLIN;
     pollt[0].revents = 0;
 
-    int nfds = 1;
-    for (int i = 1; i <= MAX_CLIENTS; i++) {
+    pollt[1].fd = STDIN_FILENO;
+    pollt[1].events = POLLIN;
+    pollt[1].revents = 0;
+
+    int nfds = 2;
+    for (int i = 2; i <= MAX_CLIENTS; i++) {
         pollt[i].fd = -1;
     }
 
@@ -64,7 +68,7 @@ int main(int argc, char *argv[]) {
                 char client_ip[INET_ADDRSTRLEN];
                 inet_ntop(AF_INET, &(peer.sin_addr.s_addr), client_ip, INET_ADDRSTRLEN);
                 printf("\n[client connected: %s]\n", client_ip);
-                for (int i = 1; i <= MAX_CLIENTS; i++) {
+                for (int i = 2; i <= MAX_CLIENTS; i++) {
                     if (pollt[i].fd == -1) {
                         pollt[i].fd = client_fd;
                         pollt[i].events = POLLIN;
@@ -74,7 +78,22 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
-        for (int i = 1; i < nfds; i++) {
+        if (r > 0 && (pollt[1].revents & POLLIN)) {
+            ssize_t red = read(STDIN_FILENO, buffer, sizeof(buffer));
+            if (red > 0) {
+                int sent = 0;
+                for (int i = 2; i < nfds; i++) {
+                    if (pollt[i].fd != -1) {
+                        write(pollt[i].fd, buffer, red);
+                        sent++;
+                    }
+                }
+                if (sent == 0) {
+                    printf("[no clients connected]\n");
+                }
+            }
+        }
+        for (int i = 2; i < nfds; i++) {
             if (pollt[i].fd != -1 && (pollt[i].revents & POLLIN)) {
                 ssize_t red = read(pollt[i].fd, buffer, sizeof(buffer));
                 if (red < 0) {
@@ -99,7 +118,7 @@ int main(int argc, char *argv[]) {
 
 cleanup:
     close(socket_fd);
-    for (int i = 1; i < nfds; i++) {
+    for (int i = 2; i < nfds; i++) {
         if (pollt[i].fd != -1) close(pollt[i].fd);
     }
     return 0;

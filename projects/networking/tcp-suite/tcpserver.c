@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     }
     int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd < 0) {
-        perror("Socket error\n");
+        perror("Socket error");
         return 1;
     }
     struct sockaddr_in server, peer;

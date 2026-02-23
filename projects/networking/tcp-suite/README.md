@@ -7,5 +7,3 @@
 ## Installation
 
 ## Example
-
-

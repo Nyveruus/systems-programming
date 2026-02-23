@@ -1,3 +1,5 @@
+//TODO divide code into functions and clean up
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>

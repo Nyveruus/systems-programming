@@ -38,7 +38,7 @@ cleanup:
 }
 
 int connectf(int socket_fd, struct sockaddr_in *server, char **argv) {
-    memset(server, 0, sizeof(server));
+    memset(server, 0, sizeof(*server));
     server->sin_family = AF_INET;
     server->sin_port = htons(atoi(argv[2]));
     server->sin_addr.s_addr = inet_addr(argv[1]);
@@ -68,7 +68,7 @@ int readaw(int socket_fd) {
                 fprintf(stderr, "error");
                 return 1;
             }
-            write(STDOUT_FILENO, buffer, sizeof(red));
+            write(STDOUT_FILENO, buffer, red);
         }
 
         if (r > 0 && (fds[1].revents & POLLIN)) {
@@ -76,7 +76,7 @@ int readaw(int socket_fd) {
                 fprintf(stderr, "error");
                 return 1;
             }
-            write(socket_fd, buffer, sizeof(red));
+            write(socket_fd, buffer, red);
         }
     }
 }

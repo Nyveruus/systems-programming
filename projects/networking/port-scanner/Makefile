@@ -3,7 +3,7 @@
 all: portscanner
 
 portscanner: main.c
-	gcc -Wall -Wextra main.c -o portscanner
+	gcc -Wall -Wextra main.c -o portscanner -lpthread
 install: portscanner
 	install -m 744 portscanner /usr/local/bin/portscanner
 clean:

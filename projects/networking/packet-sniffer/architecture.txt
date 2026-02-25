@@ -12,3 +12,4 @@ recvfrom
 should capture? accept all except from lo, if user specified then check if matches user args
 dump to .pcap file as long as keep running true, dum
 if time elapsed is more than 2 hours, overwrite .pcap file and reinitialize headers
+if keep running 0, then cleanup: turn off promisc mode, close socket, free memory if necessary,

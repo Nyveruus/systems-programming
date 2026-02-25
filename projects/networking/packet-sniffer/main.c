@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <unistd>
+#include <string.h>
+#include <stdlib.h>
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -10,6 +12,10 @@
 
 #include <signal.h>
 
+#define MAX_IF 32
+
+static char *promisc_interfaces[MAX_IF];
+static int promisc_count = 0;
 static int keep_running = 1;
 
 void signal_handler(int sig) {
@@ -53,7 +59,13 @@ int main(int argc, char *argv[]) {
     //open .pcap file wb
     //write header to .pcap file
     //while running: recvfrom, function: check if from right interface (filter for default or user arg interfaces) write to .pcap
-    //cleanup: remove promisc mode from interfaces, close socket, free any memory
+    //cleanup: remove promisc mode from interfaces, close socket, free any
+    for (int i = 0; i < promisc_count; i++) {
+        unset_promisc(promisc_interfaces[i], socket_fd);
+        free(promisc_interfaces[i]);
+    }
+    close(socket_fd);
+    return 0;
 }
 
 void set_promisc(char *arg, int socket_fd) {
@@ -77,6 +89,7 @@ void set_promisc(char *arg, int socket_fd) {
         perror("ioctl");
         return;
     }
+    promisc_interfaces[promisc_count++] = strdup(arg);
     return;
 }
 

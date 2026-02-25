@@ -1,0 +1,13 @@
+intentions:
+
+By default, passive sniff on all interfaces promiscuously excluding lo (no arguments), can take argument/s to specify interface/s. Dump everything to a rolling 2 hour .pcap file (headers must be added to work) so that it can be read and parsed by tcpdump or wireshark. Retrieval works by a remote system using scp
+
+execution:
+
+sigint handler
+parse arguments
+socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL)) specify low-level in network stack and eth_p_all to capture all protocols and packets
+set promiscuous mode for each interface to capture all frames
+create and set headers for .pcap file
+dump to .pcap file as long as keep running true
+if time elapsed is more than 2 hours, overwrite .pcap file and reinitialize headers

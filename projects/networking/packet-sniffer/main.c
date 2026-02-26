@@ -15,6 +15,7 @@
 #include <sys/time.h>
 
 #define MAX_IF 32
+#define TIME_ROTATION 7200
 
 struct __attribute__((packed)) pcap_header {
     uint32_t magic_number;
@@ -102,7 +103,7 @@ int main(int argc, char *argv[]) {
 
     while (keep_running) {
         //while running: if time elapsed over X hours, overwrite file (close and open) and rebuild headers
-        if (time(NULL) - start_time >= 7200) {
+        if (time(NULL) - start_time >= TIME_ROTATION) {
             fclose(file);
             file = fopen("captures/file.pcap", "wb");
             if (!file) {

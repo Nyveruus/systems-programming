@@ -115,8 +115,7 @@ int main(int argc, char *argv[]) {
         }
 
         struct sockaddr_ll src_addr;
-        socklen_t addr_len = sizeof(src_addr);
-        ssize_t len = recvfrom(socket_fd, buffer, sizeof(buffer), 0, (struct sockaddr*)&src_addr, &addr_len);
+        ssize_t len = recvfrom(socket_fd, buffer, sizeof(buffer), 0, (struct sockaddr*)&src_addr, sizeof(src_addr));
         if (len < 0) {
             if (keep_running)
                 perror("recvfrom");

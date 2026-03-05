@@ -11,7 +11,6 @@
 #define PORT 8080
 #define IP "127.0.0.1"
 #define BACKLOG 10
-#define MAX_CLIENTS 10
 
 int create(int socket_fd, struct sockaddr_in *server);
 
@@ -25,6 +24,16 @@ int main(void) {
     if (create(socket_fd, &server) == 1) {
         close(socket_fd);
         return 1;
+    }
+    for (;;) {
+        struct sockaddr_in client;
+        socklen_t clientlen = sizeof(client);
+        int *client_fd = malloc(sizeof(int));
+
+        if ((*client_fd = accept(socket_fd, (struct sockaddr *)&client, &clientlen)) < 0) {
+            perror("accept");
+            continue;
+        }
     }
 }
 
@@ -42,5 +51,7 @@ int create(int socket_fd, struct sockaddr_in *server) {
         perror("listen");
         return 1;
     }
+
+    printf("Listening on port %i", PORT);
     return 0;
 }

@@ -6,15 +6,24 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#include <poll.h>
+#include <pthread.h>
 
 #define PORT 8080
 #define IP "127.0.0.1"
 #define BACKLOG 10
 
+static int keep_running = 1;
+
 int create(int socket_fd, struct sockaddr_in *server);
+void handler(void *arg);
+
+void signal_handler(int sig) {
+    (void)sig;
+    keep_running = 0;
+}
 
 int main(void) {
+    signal(SIGINT, signal_handler);
     socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd < 0) {
         perror("socket");
@@ -25,7 +34,7 @@ int main(void) {
         close(socket_fd);
         return 1;
     }
-    for (;;) {
+    while (keep_running) {
         struct sockaddr_in client;
         socklen_t clientlen = sizeof(client);
         int *client_fd = malloc(sizeof(int));
@@ -34,7 +43,12 @@ int main(void) {
             perror("accept");
             continue;
         }
+        pthread_t tid;
+        pthread_create(tid, NULL, handler, (void *)client_fd);
+        pthread_detach(tid);
     }
+    close(socket_fd);
+    return 0;
 }
 
 int create(int socket_fd, struct sockaddr_in *server) {
@@ -54,4 +68,8 @@ int create(int socket_fd, struct sockaddr_in *server) {
 
     printf("Listening on port %i", PORT);
     return 0;
+}
+
+void handler(void *arg) {
+    ;
 }

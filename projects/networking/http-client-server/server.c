@@ -7,15 +7,17 @@
 #include <netinet/in.h>
 
 #include <pthread.h>
+#include <signal.h>
 
 #define PORT 8080
 #define IP "127.0.0.1"
 #define BACKLOG 10
+#define BUFFER_SIZE 8192
 
 static int keep_running = 1;
 
 int create(int socket_fd, struct sockaddr_in *server);
-void handler(void *arg);
+void *handler(void *arg);
 
 void signal_handler(int sig) {
     (void)sig;
@@ -24,7 +26,7 @@ void signal_handler(int sig) {
 
 int main(void) {
     signal(SIGINT, signal_handler);
-    socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+    int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd < 0) {
         perror("socket");
         return 1;
@@ -37,14 +39,17 @@ int main(void) {
     while (keep_running) {
         struct sockaddr_in client;
         socklen_t clientlen = sizeof(client);
-        int *client_fd = malloc(sizeof(int));
-
-        if ((*client_fd = accept(socket_fd, (struct sockaddr *)&client, &clientlen)) < 0) {
+        int client_fd = accept(socket_fd, (struct sockaddr *)&client, &clientlen);
+        if (client_fd < 0) {
             perror("accept");
             continue;
         }
         pthread_t tid;
-        pthread_create(tid, NULL, handler, (void *)client_fd);
+        if (pthread_create(&tid, NULL, handler, (void *)(intptr_t)client_fd) != 0) {
+            perror("pthread_create");
+            close(client_fd);
+            continue;
+        }
         pthread_detach(tid);
     }
     close(socket_fd);
@@ -53,10 +58,10 @@ int main(void) {
 
 int create(int socket_fd, struct sockaddr_in *server) {
     memset(server, 0, sizeof(struct sockaddr_in));
-    server.sin_family = AF_INET;
-    server.sin_port = htons(PORT);
-    server.sin_addr.s_addr = inet_addr(IP);
-    socklen_t addrlen = sizeof(struct sockaddr)
+    server->sin_family = AF_INET;
+    server->sin_port = htons(PORT);
+    server->sin_addr.s_addr = inet_addr(IP);
+    socklen_t addrlen = sizeof(struct sockaddr);
     if (bind(socket_fd, (struct sockaddr *)server, addrlen) < 0) {
         perror("bind");
         return 1;
@@ -65,11 +70,14 @@ int create(int socket_fd, struct sockaddr_in *server) {
         perror("listen");
         return 1;
     }
-
-    printf("Listening on port %i", PORT);
+    printf("Listening on port %d\n", PORT);
     return 0;
 }
 
-void handler(void *arg) {
-    ;
+void *handler(void *arg) {
+    int client_fd = (int)(intptr_t)arg;
+    char buffer[BUFFER_SIZE];
+
+    close(client_fd);
+    return NULL;
 }

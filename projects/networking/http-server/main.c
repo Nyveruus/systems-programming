@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -8,13 +9,14 @@
 
 #include <pthread.h>
 #include <signal.h>
+#include <errno.h>
 
 #define PORT 8080
 #define IP "127.0.0.1"
 #define BACKLOG 10
 #define BUFFER_SIZE 8192
 
-static int keep_running = 1;
+static volatile sig_atomic_t keep_running = 1;
 
 int create(int socket_fd, struct sockaddr_in *server);
 void *handler(void *arg);
@@ -25,7 +27,11 @@ void signal_handler(int sig) {
 }
 
 int main(void) {
-    signal(SIGINT, signal_handler);
+    struct sigaction act = {
+        .sa_handler = signal_handler,
+        .sa_flags = 0,
+    };
+    sigaction(SIGINT, &act, NULL);
     int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd < 0) {
         perror("socket");
@@ -39,15 +45,23 @@ int main(void) {
     while (keep_running) {
         struct sockaddr_in client;
         socklen_t clientlen = sizeof(client);
-        int client_fd = accept(socket_fd, (struct sockaddr *)&client, &clientlen);
-        if (client_fd < 0) {
+        int *client_fd = malloc(sizeof(int));
+        if (!client_fd) {
+            perror("malloc");
+            break;
+        }
+        *client_fd = accept(socket_fd, (struct sockaddr *)&client, &clientlen);
+        if (*client_fd < 0) {
             perror("accept");
+            free(client_fd);
+            if (errno == EINTR) break;
             continue;
         }
         pthread_t tid;
-        if (pthread_create(&tid, NULL, handler, (void *)(intptr_t)client_fd) != 0) {
+        if (pthread_create(&tid, NULL, handler, (void *)client_fd) != 0) {
             perror("pthread_create");
-            close(client_fd);
+            close(*client_fd);
+            free(client_fd);
             continue;
         }
         pthread_detach(tid);
@@ -75,7 +89,9 @@ int create(int socket_fd, struct sockaddr_in *server) {
 }
 
 void *handler(void *arg) {
-    int client_fd = (int)(intptr_t)arg;
+    int client_fd = *((int *)arg);
+    free(arg);
+    printf("%i", client_fd);
     char buffer[BUFFER_SIZE];
 
     close(client_fd);

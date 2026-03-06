@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <errno.h>
+#include <regex.h>
 
 #define PORT 8080
 #define IP "127.0.0.1"
@@ -91,9 +92,20 @@ int create(int socket_fd, struct sockaddr_in *server) {
 void *handler(void *arg) {
     int client_fd = *((int *)arg);
     free(arg);
-    printf("%i", client_fd);
-    char buffer[BUFFER_SIZE];
 
+    char buffer[BUFFER_SIZE];
+    ssize_t received = recv(client_fd, buffer, BUFFER_SIZE, 0);
+    if (received > 0) {
+        regex_t result;
+        //capture 0: the full match 2: group (filename)
+        regmatch_t matches[2];
+        regcomp(&comp, "^GET /([^ ]*) HTTP/1", REG_EXTENDED);
+        if (regexec(&comp, buffer, 2, matches, 0) == 0) {
+
+        }
+    }
+
+    free(buffer);
     close(client_fd);
     return NULL;
 }

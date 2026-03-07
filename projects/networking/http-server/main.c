@@ -96,16 +96,29 @@ void *handler(void *arg) {
     char buffer[BUFFER_SIZE];
     ssize_t received = recv(client_fd, buffer, BUFFER_SIZE, 0);
     if (received > 0) {
-        regex_t result;
+        regex_t comp;
         //capture 0: the full match 2: group (filename)
         regmatch_t matches[2];
         regcomp(&comp, "^GET /([^ ]*) HTTP/1", REG_EXTENDED);
         if (regexec(&comp, buffer, 2, matches, 0) == 0) {
+            buffer[matches[1].rm_eo] = '\0';
+            char *url_file = buffer + matches[1].rm_so;
+            char *file = get_filename(url_file);
 
+            char extension[32];
+            strcpy(extension, //get extension);
+
+            //buld response
+            //send to client
         }
+        regfree(&regex);
     }
 
     free(buffer);
     close(client_fd);
     return NULL;
+}
+
+char *get_filename (char *file) {
+    ;
 }
